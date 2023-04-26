@@ -8,7 +8,7 @@ import os
 import tempfile
 from tkinter import ttk
 from tkinter.messagebox import showinfo
-
+from speech_recognition import exceptions
 class Window(Frame):
 
     def __init__(self, master=None):
@@ -102,18 +102,19 @@ class Window(Frame):
         self.max_progress = len(audio_chunks)
         tempWavFile = tempfile.mktemp('.wav')
 
-        with open(self.output_file_path,"a") as file :
+        with open(self.output_file_path,"w",encoding='utf-8') as file :
             for i, chunk in enumerate(audio_chunks):
                 if len(chunk) < 1000:
                     continue
                 chunk.export(tempWavFile, format="wav")
 
                 with sr.AudioFile(tempWavFile) as source:
-                    audio = r.record(source)              
+                    audio = r.record(source)
+                               
                     try :
                         x = r.recognize_google(audio , language="ta-IN")
                         file.write(f"{x} \n")
-                    except :
+                    except  exceptions.UnknownValueError:
                         print("bad source",len(chunk))
                         chunk.export(f"bad/bad_source{i}.wav",format ="wav")
                 self.progress()
