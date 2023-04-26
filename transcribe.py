@@ -14,7 +14,7 @@ class Window(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.master = master
-        self.max_progress = 1000 
+        self.max_progress = 1000
 
 
         self.start_button  = Button(self,text ="start transcribing",command=self.translate)
@@ -23,24 +23,24 @@ class Window(Frame):
         file_name = Label(self,text = "mp3 file path").grid(row = 0, column = 0,pady=20) 
 
         self.mp3_file_path = Label(self,text = "None")
-        self.mp3_file_path.grid(row = 0, column = 1)
+        self.mp3_file_path.grid(row = 0, column = 1,pady=20)
 
         self.mp3_size_lb = Label(self,text = "None")
         
-        select_file  = Label(self,text = "click on button",width=20).grid(row = 1, column = 0,pady=20) 
-        mp3_file_path_button = Button(self, text = "click here to set input file location",command=self.open_file_mp3).grid(row = 1, column = 1)  
+        #select_file  = Label(self,text = "click on button",width=20).grid(row = 1, column = 0,pady=20) 
+        Button(self, text = "click here to set input file location",command=self.open_file_mp3).grid(row = 1, column = 1,pady=20)  
 
 
         self.output_file_path =None 
         Label(self,text = "output file path").grid(row =2, column = 0,pady=20) 
          
         self.output_file_path_lb = Label(self,text = "None")
-        self.output_file_path_lb.grid(row = 2, column = 1)  
+        self.output_file_path_lb.grid(row = 2, column = 1,pady=20)  
         
-        Label(self,text = "click on button",width=20).grid(row = 3, column = 0,pady=20) 
-        Button(self, text = "click here to set output file location",command=self.open_file_text).grid(row = 3, column = 1)    
+        #Label(self,text = "click on button",width=20).grid(row = 3, column = 0,pady=20) 
+        Button(self, text = "click here to set output file location",command=self.open_file_text).grid(row = 3, column = 1,pady=20)    
 
-        self.start_button.grid(row = 4, column = 0,pady=20,columnspan= 3)  
+        self.start_button.grid(row = 4, column = 0,pady=20,columnspan= 2)  
 
 
         self.value= 0
@@ -57,7 +57,8 @@ class Window(Frame):
     def progress(self):
         if self.value < self.max_progress:
             self.value += 1
-            self.value_label['text'] =" do not worry if progress is not increasing,mp3 file is loading\n"+ self.update_progress_label()
+            self.value_label.config(text = " do not worry if progress is not increasing,mp3 file is loading\n"+ self.update_progress_label())
+            self.value_label.update()
         else:
             showinfo(message='The progress completed!')
 
@@ -83,12 +84,19 @@ class Window(Frame):
         
         if self.output_file_path is None :
             self.output_file_path = "output.txt" 
+
+        # check if folder bad exists 
+        path = "bad/"
+        if not os.path.exists(path):
+            showinfo(message='create a folder a name bad in your folder ')
+            return
         
         sound = AudioSegment.from_mp3(self.mp3_file)
         
         # spliting audio files
-        audio_chunks = split_on_silence(sound, min_silence_len=1000, silence_thresh=-40 )
-        
+        audio_chunks = split_on_silence(sound, min_silence_len=1000, silence_thresh=-40,keep_silence=150 )
+
+
         r = sr.Recognizer()
         #loop is used to iterate over the output list
         self.max_progress = len(audio_chunks)
@@ -96,6 +104,8 @@ class Window(Frame):
 
         with open(self.output_file_path,"a") as file :
             for i, chunk in enumerate(audio_chunks):
+                if len(chunk) < 1000:
+                    continue
                 chunk.export(tempWavFile, format="wav")
 
                 with sr.AudioFile(tempWavFile) as source:
@@ -103,9 +113,9 @@ class Window(Frame):
                     try :
                         x = r.recognize_google(audio , language="ta-IN")
                         file.write(f"{x} \n")
-                    except:
-                        print("bad source")
-
+                    except :
+                        print("bad source",len(chunk))
+                        chunk.export(f"bad/bad_source{i}.wav",format ="wav")
                 self.progress()
         self.progress()
 
@@ -120,6 +130,6 @@ if __name__ == "__main__":
     app.place(x=0,y=0)
     # set window title
     root.wm_title("Tkinter window")
-
+    root.title("transcribe")
     # show window
     root.mainloop()
